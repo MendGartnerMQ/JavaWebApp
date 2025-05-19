@@ -79,11 +79,9 @@ jobs:
                 echo MEND_EMAIL: $MEND_EMAIL
                 echo MEND_USER_KEY: $MEND_USER_KEY
                 echo MEND_URL: $MEND_URL
-                echo "Start Mend image scan"
+                echo "Start Mend image scan (release)"
                 echo "Image Name:" ${{steps.orgname.outputs.lowercase}}/${{steps.reponame.outputs.lowercase}}:${{ env.WEBGOAT_TAG_VERSION }}
                 ./mend image ${{steps.orgname.outputs.lowercase}}/${{steps.reponame.outputs.lowercase}}:${{ env.WEBGOAT_TAG_VERSION }} -s *//GH_${{github.event.repository.name}}//GH_${{github.event.repository.name}}_${{github.ref_name}}
-                ./mend iac -s *//GH_${{github.event.repository.name}}//GH_${{github.event.repository.name}}_${{github.ref_name}} 
-                ./mend code -s *//GH_${{github.event.repository.name}}//GH_${{github.event.repository.name}}_${{github.ref_name}} -j 2 --js 2
 
             - name: Mend CLI Image Scan on Main
               if: github.ref == 'refs/heads/main' && github.event_name == 'push'
@@ -94,6 +92,10 @@ jobs:
               run: |
                 echo Downloading Mend CLI
                 curl -LJO https://downloads.mend.io/production/unified/latest/linux_amd64/mend && chmod +x mend
-                echo "Start Mend image scan"
+                echo Envionrment vars
+                echo MEND_EMAIL: $MEND_EMAIL
+                echo MEND_USER_KEY: $MEND_USER_KEY
+                echo MEND_URL: $MEND_URL
+                echo "Start Mend image scan (main)"
                 echo "Image Name:" ${{steps.orgname.outputs.lowercase}}/${{steps.reponame.outputs.lowercase}}:${{ env.WEBGOAT_TAG_VERSION }}
                 ./mend image ${{steps.orgname.outputs.lowercase}}/${{steps.reponame.outputs.lowercase}}:${{ env.WEBGOAT_TAG_VERSION }} -s *//GH_${{github.event.repository.name}}//GH_${{github.event.repository.name}}
