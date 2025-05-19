@@ -23,7 +23,7 @@ WORKDIR /home/webgoat
 
 # Mend traceability labels
 LABEL io.mend.image.dockerfile.path=Dockerfile
-LABEL org.opencontainers.image.source=https://github.com/<your github org>/WebGoat
+LABEL org.opencontainers.image.source=https://github.com/MendGartnerMQ/WebGoat
 
 ENTRYPOINT [ "java", \
    "-Duser.home=/home/webgoat", \
