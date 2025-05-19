@@ -75,6 +75,10 @@ jobs:
               run: |
                 echo Downloading Mend CLI
                 curl -LJO https://downloads.mend.io/production/unified/latest/linux_amd64/mend && chmod +x mend
+                echo Envionrment vars
+                echo MEND_EMAIL: $MEND_EMAIL
+                echo MEND_USER_KEY: $MEND_USER_KEY
+                echo MEND_URL: $MEND_URL
                 echo "Start Mend image scan"
                 echo "Image Name:" ${{steps.orgname.outputs.lowercase}}/${{steps.reponame.outputs.lowercase}}:${{ env.WEBGOAT_TAG_VERSION }}
                 ./mend image ${{steps.orgname.outputs.lowercase}}/${{steps.reponame.outputs.lowercase}}:${{ env.WEBGOAT_TAG_VERSION }} -s *//GH_${{github.event.repository.name}}//GH_${{github.event.repository.name}}_${{github.ref_name}}
