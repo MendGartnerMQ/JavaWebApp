@@ -1,101 +1,32 @@
-name: "Release Pipeline"
+yaml
+name: Mend CLI SCA Policy Check
+
 on:
-    push:
-        branches:
-            - v*
-            - main
-    pull_request:
-        branches:
-            - main
- 
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
 jobs:
-    build:
-        name: Release Build
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v4
+  policy-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-            - name: Set up JDK 17
-              uses: actions/setup-java@v3
-              with:
-                  distribution: 'temurin'
-                  java-version: 17
-                  architecture: x64
+      # Build/install dependencies first (example for Node.js; replace with your build steps)
+      - name: Install dependencies
+        run: npm ci
 
-            - name: Cache Maven packages
-              uses: actions/cache@v4
-              with:
-                  path: ~/.m2
-                  key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-                  restore-keys: ${{ runner.os }}-m2
+      - name: Download Mend CLI
+        run: |
+          curl https://downloads.mend.io/cli/linux_amd64/mend -o /usr/local/bin/mend
+          chmod +x /usr/local/bin/mend
 
-            - id: reponame
-              uses: ASzc/change-string-case-action@v6
-              with:
-                  string: ${{github.event.repository.name}}
-
-            - id: orgname
-              uses: ASzc/change-string-case-action@v6
-              with:
-                string: ${{github.repository_owner}}
-        
-            - name: "Set labels for ${{ github.ref }}"
-              run: |
-                echo "WEBGOAT_TAG_VERSION=${{ github.ref_name }}" >> $GITHUB_ENV
-                WEBGOAT_MAVEN_VERSION=${{ github.ref_name }}
-                echo "WEBGOAT_MAVEN_VERSION=${WEBGOAT_MAVEN_VERSION:1}" >> $GITHUB_ENV
-                echo ${{steps.reponame.outputs.lowercase}}
-
-
-            - name: Build with Maven
-              run: |
-                mvn --no-transfer-progress versions:set -DnewVersion=${{ env.WEBGOAT_MAVEN_VERSION }}
-                mvn --no-transfer-progress install -DskipTests
-
-            - name: "Docker Build Release"
-              if: startsWith(github.ref, 'refs/heads/v') || github.ref == 'refs/heads/main' && github.event_name == 'push' 
-              uses: docker/build-push-action@v5.0.0
-              with:
-                context: ./
-                file: ./Dockerfile
-                push: false
-                load: true
-                tags: |
-                 ${{steps.orgname.outputs.lowercase}}/${{steps.reponame.outputs.lowercase}}:${{ env.WEBGOAT_TAG_VERSION }}
-                 ${{steps.orgname.outputs.lowercase}}/${{steps.reponame.outputs.lowercase}}:latest
-                build-args: |
-                    webgoat_version=${{ env.WEBGOAT_MAVEN_VERSION }}
-
-            - name: Mend CLI Scan on Release
-              if: startsWith(github.ref, 'refs/heads/v') && github.event_name == 'push'
-              env:
-                MEND_EMAIL: ${{secrets.MEND_EMAIL}}
-                MEND_USER_KEY: ${{secrets.MEND_USER_KEY}}
-                MEND_URL: https://saas.mend.io
-              run: |
-                echo Downloading Mend CLI
-                curl -LJO https://downloads.mend.io/production/unified/latest/linux_amd64/mend && chmod +x mend
-                echo Envionrment vars
-                echo MEND_EMAIL: $MEND_EMAIL
-                echo MEND_USER_KEY: $MEND_USER_KEY
-                echo MEND_URL: $MEND_URL
-                echo "Start Mend image scan (release)"
-                echo "Image Name:" ${{steps.orgname.outputs.lowercase}}/${{steps.reponame.outputs.lowercase}}:${{ env.WEBGOAT_TAG_VERSION }}
-                ./mend image ${{steps.orgname.outputs.lowercase}}/${{steps.reponame.outputs.lowercase}}:${{ env.WEBGOAT_TAG_VERSION }} -s *//GH_${{github.event.repository.name}}//GH_${{github.event.repository.name}}_${{github.ref_name}}
-
-            - name: Mend CLI Image Scan on Main
-              if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-              env:
-                MEND_EMAIL: ${{secrets.MEND_EMAIL}}
-                MEND_USER_KEY: ${{secrets.MEND_USER_KEY}}
-                MEND_URL: https://saas.mend.io
-              run: |
-                echo Downloading Mend CLI
-                curl -LJO https://downloads.mend.io/production/unified/latest/linux_amd64/mend && chmod +x mend
-                echo Envionrment vars
-                echo MEND_EMAIL: $MEND_EMAIL
-                echo MEND_USER_KEY: $MEND_USER_KEY
-                echo MEND_URL: $MEND_URL
-                echo "Start Mend image scan (main)"
-                echo "Image Name:" ${{steps.orgname.outputs.lowercase}}/${{steps.reponame.outputs.lowercase}}:${{ env.WEBGOAT_TAG_VERSION }}
-                ./mend image ${{steps.orgname.outputs.lowercase}}/${{steps.reponame.outputs.lowercase}}:${{ env.WEBGOAT_TAG_VERSION }} -s *//GH_${{github.event.repository.name}}//GH_${{github.event.repository.name}}
+      - name: Mend SCA scan (fail on policy violation)
+        env:
+          MEND_EMAIL: ${{ secrets.MEND_EMAIL }}
+          MEND_USER_KEY: ${{ secrets.MEND_USER_KEY }}
+          MEND_URL: https://saas.mend.io
+        run: |
+          # Scope uses the logged-in org; app/project set from repo name and branch
+          mend dep --fail-policy -s "*//${{ github.event.repository.name }}//${{ github.ref_name }}"
