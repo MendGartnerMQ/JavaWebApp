@@ -15,7 +15,7 @@ jobs:
 
       # Build/install dependencies first (example for Node.js; replace with your build steps)
       - name: Install dependencies
-        run: npm ci
+        run: mvn install
 
       - name: Download Mend CLI
         run: |
