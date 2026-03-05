@@ -1,6 +1,5 @@
 yaml
 name: Mend CLI SCA Policy Check
-
 on:
   push:
     branches: [ main ]
