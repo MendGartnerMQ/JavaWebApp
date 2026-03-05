@@ -16,9 +16,11 @@ jobs:
 #      with:
 #        java-version: '11'
 #        distribution: 'adopt'
-    - name: Build Maven and Pip
+    - name: Build Maven
       run: mvn clean install -DskipTests=true
-           pip install -r requirements.txt
+
+    - name: Build Python      
+      run: pip install -r requirements.txt
      
     - name: Mend CLI Scan
       env:
