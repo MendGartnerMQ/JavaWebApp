@@ -18,10 +18,7 @@ jobs:
 #        distribution: 'adopt'
     - name: Build Maven
       run: mvn clean install -DskipTests=true
-
-    - name: Build Python      
-      run: pip install -r requirements.txt
-     
+      
     - name: Mend CLI Scan
       env:
         MEND_EMAIL: ${{secrets.MEND_EMAIL}}
